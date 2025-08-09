@@ -1,0 +1,43 @@
+# requirements-windows.txt
+# Core dependencies
+flask==3.0.0
+flask-socketio==5.3.5
+python-socketio[client]==5.10.0
+requests==2.31.0
+python-dotenv==1.0.0
+
+# Claude AI
+anthropic==0.21.3
+
+# Windows-compatible async
+eventlet==0.33.3
+dnspython==2.4.2  # Required for eventlet on Windows
+greenlet==3.0.1   # Required for eventlet on Windows
+
+# Scheduling
+apscheduler==3.10.4
+
+# Date/time handling
+python-dateutil==2.8.2
+pytz==2024.1
+tzdata==2024.1  # Required for Windows timezone data
+
+# System monitoring (Windows compatible)
+psutil==5.9.6
+pywin32==306  # Windows-specific system APIs
+
+# Logging enhancements
+colorama==0.4.6  # For colored console output on Windows
+
+# SSL/TLS for Windows
+certifi==2024.2.2
+urllib3==2.1.0
+
+# Additional Windows compatibility
+chardet==5.2.0
+idna==3.6
+
+# Optional development tools
+# ipython==8.18.1
+# black==23.12.1
+# flake8==7.0.0

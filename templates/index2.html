@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tinder Bot Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      padding: 20px;
+    }
+    body.dark-mode {
+      background-color: #121212;
+      color: #ffffff;
+    }
+    .match-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideIn 0.5s forwards ease-in-out;
+    }
+    @keyframes slideIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .match-card img {
+      max-width: 100px;
+      border-radius: 50%;
+    }
+    .match-actions button {
+      margin-right: 5px;
+    }
+    .typing-entry {
+      font-style: italic;
+      color: gray;
+      opacity: 0.8;
+      animation: typingBlink 1.2s infinite;
+    }
+    @keyframes typingBlink {
+      0% { opacity: 0.3; }
+      50% { opacity: 1; }
+      100% { opacity: 0.3; }
+    }
+    .typing-entry.fade-out {
+      opacity: 0;
+      transition: opacity 1.2s ease-out;
+    }
+    .btn {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-outline-light:hover {
+      color: black;
+      background-color: white;
+    }
+    #bot-status {
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+    #toast-container .toast {
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      z-index: 9999;
+    }
+    .auto-approved-card {
+      border: 2px solid #4caf50;
+      opacity: 0.85;
+    }
+    .sentiment-badge {
+      font-size: 0.9em;
+    }
+    .quick-stats-panel .stat-item {
+      text-align: center;
+      padding: 10px;
+    }
+    .quick-stats-panel h6 {
+      color: #888;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body class="dark-mode">
+  <div class="container py-4">
+    <div class="text-center mb-4">
+      <h1 class="display-4">🔥 Tinder Bot</h1>
+      <div class="text-light fw-light mt-2">AI-Powered Tinder Bot Dashboard</div>
+    </div>
+
+    <div id="bot-status" class="text-info">Bot Status: <span id="status-value">Checking...</span></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <span></span>
+      <div>
+        <button id="toggle-theme" class="btn btn-outline-light me-2">🌓 Toggle Theme</button>
+        <button id="toggle-sound" class="btn btn-secondary">🔊 Sound: On</button>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mb-4 justify-content-start">
+      <button id="toggle-bot" class="btn btn-danger">Start Bot</button>
+      <button id="toggle-auto-approve" class="btn btn-success">Auto-Approve: Off</button>
+      <button id="toggle-auto-swipe" class="btn btn-warning">Auto-Swipe: Off</button>
+      <button id="toggle-browser" class="btn btn-info">Mode: Browser</button>
+      <button id="swipeBtn" class="btn btn-info">Swipe Now</button>
+      <button id="start-browser-btn" class="btn btn-primary">🌐 Start Browser</button>
+    </div>
+
+    <!-- Notification Sound -->
+    <audio id="notification-sound" preload="auto">
+      <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBD6X2fPDbSMFJYPY7tiVSQwZZLrx6Z9SEA9Tte3rq10XE0Cf4PK6aB4GNZHe9MdwKAUzd8z12aZXFBFmsNzrzXAjBjqI1vTBfiAFM27b6dqjXhMPXLnk65xUDw5Nt+Lpq2EUEj6b3PSzaBsGI4HF7t6XQggcYLrm6KNSDgxHqd/1uWgaAyN8yeLcYhUNLXzX6NWpVA8XWbHZ77BmFQ4yfMhw5p1FDBJct9Z+r2MZDCV6w+PaZRMOLXLN7NeqWQ8cWbDx3rBgEw8+eMVu65ZFEh5Gr9Po3n0gBz2N0fnMeiwGOZnS9bl5HQU3g9TzxXUjBi6C1P7JeSoGNXzI8d2VRQoTYLvt4pxSEgxCo+P1un0iCzWW2PHL2xgGPXvG8t2XOQQcW7Xk7aRXDwxBr97xr2cUBj6e3vPA1hwHOJLY9sN2JQYTP3fJ7dx8JAY0gMf+5ZNDDBVbtd7rq10cBlqw2ea7byAFNHzJ7t2XOgYSW6/h9LlqGAUzg8b8xnwkBjmN0fXCdSEGMIDG++OURAwPVbPs7LdkGwY8mNXy2nMkBSSE1/vKdykGNobM9t1+JAUiYLrq561ZHAY4ltLz3Hk2BTFu2u/3sFgTCVy04/O5fSEFNYzH8d+WPQwOXqzl67NgHAQ+fsr54J9FDBNhtdvl2Xo4BT5zxu/jnEgLF1an1PPSeSYFOYzJ8NmLOwEWYqPh7aduFAo/jNXz0nkkBDSE1/TGjisGNHzM9c9+NAGV2Ox13Z5OCREEg9Xs3XMkBjCJ2fy7eCMFOYbF9N+YPgQTXrbP6LBhGQQ5jMTx33w6BDV4y/Hmn0kMF2Sv3e272XAZBDWJ1fLGfCEGMH/M9eKeQwcVZLPf5rJeFAQ8hsfw34E5BDZpxe/dnUQOE2a16+/JcSsGNYPG89+YOAQaXrrJ7bJiGgQzjcTx2381Bz2Jxe/dmkMMF2Cv3+q4WR0EOoLJ8Nx/NAU+fcX23KE+CBZhtuPjrmEYBDGJwOTglzwHGV+12OO2YBgFPIfM8dpvJgYygMX54JA9CBdftNblu2QaBDOJyvPYeiYHMIHF4t6TOwUbYLTX5rpsGAU8h8j06HInBy6Aw/jglzwIF2i14OKzXhgEN4nM79pyJwcvhL7q3po/CBZhte3nrV4cBDGJzvXacCEHOHjL7Nx/NAU9e8Pz3aBGCBdftNjnuWsaBDOJyvPYeiYHMIHF4t6TOwUbYLTX5rpsGAU8h8j06HInBy6Aw/jglzwIF2i14OKzXhgEN4nM79pyJwcvhL7q3po/CBZhte3nrV4cBDGJzvXacCEHOHjL7Nx/NAU9e8Pz3aBGCBdftNjnuWsaBDOJyvPYeiYHMIHF4t6TOwUbYLTX5rpsGAU8h8j06HInBy6Aw/jglzwIF2i14OKzXhgEN4nM79pyJwcvhL7q3po/CBZhte3nrV4c" type="audio/wav">
+    </audio>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+    <!-- Quick Stats Panel will be inserted here -->
+    
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <label for="personality-select" class="form-label">Personality</label>
+        <select id="personality-select" class="form-select">
+          <option value="default">Default (Josh)</option>
+          <option value="flirty">Flirty</option>
+          <option value="funny">Funny</option>
+          <option value="gentle">Gentle</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="filter-input" class="form-label">Filter Matches</label>
+        <input type="text" id="filter-input" class="form-control" placeholder="Type to filter..." />
+      </div>
+      <div class="col-md-2">
+        <label for="match_limit" class="form-label">Match Limit</label>
+        <input type="number" id="match_limit" class="form-control" value="100" />
+      </div>
+      <div class="col-md-2">
+        <label for="swipe-interval" class="form-label">Swipe Interval (min)</label>
+        <input type="number" id="swipe-interval" class="form-control" value="30" />
+      </div>
+      <div class="col-md-2">
+        <label for="typing-delay-input" class="form-label">Typing Delay (s)</label>
+        <input type="number" id="typing-delay-input" class="form-control" value="4" />
+      </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <label for="max-tokens" class="form-label">Max Tokens</label>
+        <input type="number" id="max-tokens" class="form-control" value="300" min="100" max="4000" />
+      </div>
+      <div class="col-md-6">
+        <label for="uninteracted-limit" class="form-label">Message Unmatched</label>
+        <div class="input-group">
+          <input type="number" id="uninteracted-limit" class="form-control" value="5" />
+          <button class="btn btn-primary" id="send-uninteracted-btn">Send Messages</button>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Next Swipe</label>
+        <div class="form-control-plaintext">
+          <span id="countdown" class="badge bg-secondary">--:--</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="match-container"></div>
+
+    <div id="auto-approved-toggle-container" class="mt-4">
+      <button id="toggle-auto-approved-btn" class="btn btn-dark">Show Auto-Approved</button>
+    </div>
+
+    <nav class="mt-3">
+      <ul class="pagination">
+        <li class="page-item"><button class="page-link" id="prev-page">Previous</button></li>
+        <li class="page-item"><span class="page-link" id="current-page">1</span></li>
+        <li class="page-item"><button class="page-link" id="next-page">Next</button></li>
+      </ul>
+    </nav>
+
+    <div id="auto-approved-log-container" style="display:none;">
+      <h5 class="text-success mt-3">🤖 Auto-Approved Matches</h5>
+      <div id="auto-approved-container"></div>
+    </div>
+
+    <div class="card mt-5">
+      <div class="card-header bg-info text-white">📊 Bot Statistics</div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>Total Replies:</strong> <span id="total-replies" class="badge bg-primary">0</span></p>
+            <p><strong>Total Matches:</strong> <span id="total-matches" class="badge bg-success">0</span></p>
+            <p><strong>Approved:</strong> <span id="total-approved" class="badge bg-success">0</span></p>
+            <p><strong>Rejected:</strong> <span id="total-rejected" class="badge bg-danger">0</span></p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Likes Attempted:</strong> <span id="likes-attempted" class="badge bg-info">0</span></p>
+            <p><strong>Matches Made:</strong> <span id="matches-made" class="badge bg-success">0</span></p>
+            <p><strong>Bot Uptime:</strong> <span id="bot-uptime" class="badge bg-dark">--</span></p>
+            <p><strong>Claude Tokens:</strong> <span id="claude-tokens" class="badge bg-warning text-dark">0</span></p>
+          </div>
+        </div>
+        <div class="progress mt-3" style="height: 20px;">
+          <div id="claude-token-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
+        </div>
+        <div id="model-token-breakdown" class="mt-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Socket.IO -->
+  <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    console.log("Dashboard initializing...");
+
+    // Check if Socket.IO loaded
+    if (typeof io === 'undefined') {
+      console.error('Socket.IO not loaded!');
+      alert('Socket.IO failed to load. Some features may not work.');
+    } else {
+      console.log("Socket.IO loaded successfully");
+    }
+
+    const socket = io();
+
+    // Global state
+    let matches = [];
+    let autoMatches = [];
+    let currentPage = 1;
+    let autoApprovedPage = 1;
+    const matchesPerPage = 10;
+    const autoApprovedPerPage = 10;
+    let soundEnabled = true;
+    let nextSwipeTime = null;
+
+    // Debug function
+    function debugLog(message, data = null) {
+      console.log(`[Dashboard] ${message}`, data || '');
+    }
+
+    // Enhanced error handler for fetch requests
+    async function safeFetch(url, options = {}) {
+      try {
+        debugLog(`Making request to: ${url}`);
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        debugLog(`Response from ${url}:`, data);
+        return data;
+      } catch (error) {
+        console.error(`Fetch error for ${url}:`, error);
+        showToast(`Request failed: ${error.message}`, 'danger');
+        throw error;
+      }
+    }
+
+    // Toast notifications
+    function showToast(message, type = 'info') {
+      const toast = document.createElement("div");
+      toast.className = `toast align-items-center text-white bg-${type} border-0 show`;
+      toast.role = "alert";
+      toast.style = `
+        min-width: 250px;
+        margin-bottom: 10px;
+        padding: 10px 15px;
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      `;
+
+      toast.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+          <div>${message}</div>
+          <button type="button" class="btn-close btn-close-white ms-2" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+      `;
+
+      document.getElementById("toast-container").prepend(toast);
+      setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+      }, 5000);
+      
+      debugLog(`Toast shown: ${message} (${type})`);
+    }
+
+    function playNotificationSound() {
+      if (!soundEnabled) return;
+      try {
+        const sound = document.getElementById("notification-sound");
+        if (sound) {
+          sound.play().catch(err => debugLog("Sound blocked:", err));
+        }
+      } catch (error) {
+        debugLog("Sound play error:", error);
+      }
+    }
+
+    // Start Browser button handler
+    document.getElementById('start-browser-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('start-browser-btn');
+      btn.disabled = true;
+      btn.textContent = 'Starting Browser...';
+      
+      try {
+        debugLog("Starting browser...");
+        const data = await safeFetch('/start-browser', { method: 'POST' });
+        
+        if (data.status === 'ok') {
+          showToast('Browser started! Complete login manually if needed.', 'success');
+          btn.textContent = '🌐 Browser Running';
+          btn.className = 'btn btn-success';
+        } else {
+          showToast(`Browser failed: ${data.error}`, 'danger');
+          btn.textContent = '🌐 Start Browser';
+          btn.className = 'btn btn-primary';
+        }
+        
+      } catch (error) {
+        console.error('Browser start error:', error);
+        showToast('Failed to start browser', 'danger');
+        btn.textContent = '🌐 Start Browser';
+        btn.className = 'btn btn-primary';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // All other button handlers...
+    document.getElementById("toggle-bot").addEventListener("click", async () => {
+      const btn = document.getElementById("toggle-bot");
+      btn.disabled = true;
+      
+      try {
+        debugLog("Toggling bot...");
+        const data = await safeFetch("/toggle-bot", { method: "POST" });
+        
+        btn.textContent = data.enabled ? "Stop Bot" : "Start Bot";
+        btn.className = data.enabled ? "btn btn-primary" : "btn btn-danger";
+        
+        showToast(`Bot ${data.enabled ? 'started' : 'stopped'}`, data.enabled ? 'success' : 'warning');
+      } catch (err) {
+        showToast("Failed to toggle bot", "danger");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("toggle-auto-approve").addEventListener("click", async () => {
+      const btn = document.getElementById("toggle-auto-approve");
+      const currentState = btn.textContent.includes("On");
+      const newState = !currentState;
+      
+      try {
+        debugLog(`Toggling auto-approve to: ${newState}`);
+        const data = await safeFetch("/toggle-auto-approve", {
+          method: "POST",
+          body: JSON.stringify({ auto_approve: newState })
+        });
+        
+        btn.textContent = `Auto-Approve: ${data.auto_approve ? 'On' : 'Off'}`;
+        btn.className = data.auto_approve ? "btn btn-success" : "btn btn-danger";
+        showToast(`Auto-approve ${data.auto_approve ? 'enabled' : 'disabled'}`, 'success');
+      } catch (err) {
+        showToast("Failed to toggle auto-approve", "danger");
+      }
+    });
+
+    document.getElementById("toggle-auto-swipe").addEventListener("click", async () => {
+      const btn = document.getElementById("toggle-auto-swipe");
+      const currentState = btn.textContent.includes("On");
+      const newState = !currentState;
+      
+      try {
+        debugLog(`Toggling auto-swipe to: ${newState}`);
+        const data = await safeFetch("/toggle-auto-swipe", {
+          method: "POST",
+          body: JSON.stringify({ auto_swipe: newState })
+        });
+        
+        btn.textContent = `Auto-Swipe: ${data.auto_swipe ? 'On' : 'Off'}`;
+        btn.className = data.auto_swipe ? "btn btn-success" : "btn btn-warning";
+        
+        if (data.auto_swipe) {
+          const interval = parseInt(document.getElementById("swipe-interval").value);
+          nextSwipeTime = Date.now() + interval * 60 * 1000;
+        } else {
+          nextSwipeTime = null;
+        }
+        showToast(`Auto-swipe ${data.auto_swipe ? 'enabled' : 'disabled'}`, 'success');
+      } catch (err) {
+        showToast("Failed to toggle auto-swipe", "danger");
+      }
+    });
+
+    document.getElementById("swipeBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("swipeBtn");
+      btn.disabled = true;
+      btn.textContent = "Swiping...";
+      
+      try {
+        debugLog("Manual swipe triggered");
+        const data = await safeFetch("/swipe-now", { method: "POST" });
+        
+        showToast(`Swipe completed!`, "success");
+      } catch (err) {
+        showToast("Swipe failed", "danger");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Swipe Now";
+      }
+    });
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+      debugLog("Dashboard loaded successfully!");
+      showToast("Dashboard ready! Bot is in stub mode.", "success");
+      loadInitialData();
+    });
+
+    async function loadInitialData() {
+      try {
+        debugLog("Loading initial data...");
+        
+        const config = await safeFetch('/config');
+        
+        // Update UI with config
+        document.getElementById("toggle-bot").textContent = config.bot_enabled ? "Stop Bot" : "Start Bot";
+        document.getElementById("toggle-bot").className = config.bot_enabled ? "btn btn-primary" : "btn btn-danger";
+        
+        document.getElementById("toggle-auto-approve").textContent = `Auto-Approve: ${config.auto_approve ? 'On' : 'Off'}`;
+        document.getElementById("toggle-auto-approve").className = config.auto_approve ? "btn btn-success" : "btn btn-danger";
+        
+        document.getElementById("toggle-auto-swipe").textContent = `Auto-Swipe: ${config.auto_swipe ? 'On' : 'Off'}`;
+        document.getElementById("toggle-auto-swipe").className = config.auto_swipe ? "btn btn-success" : "btn btn-warning";
+        
+        document.getElementById("status-value").textContent = config.bot_enabled ? "🟢 Running (Stub Mode)" : "🔴 Stopped";
+        document.getElementById("status-value").className = config.bot_enabled ? "text-success" : "text-danger";
+        
+        debugLog("Initial data loaded successfully");
+        
+      } catch (err) {
+        debugLog("Failed to load initial data:", err);
+        showToast("Failed to load configuration", "danger");
+      }
+    }
+
+    debugLog("Dashboard script loaded successfully");
+  </script>
+</body>
+</html>

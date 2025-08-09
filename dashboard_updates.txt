@@ -1,0 +1,67 @@
+
+# Add this to your dashboard_browser.py after the TinderBrowser class
+
+# Import message handler
+try:
+    from message_handler import MessageHandler
+    from claude_handler import ClaudeHandler
+    MESSAGE_HANDLER_AVAILABLE = True
+    print("✅ Message handler loaded")
+except ImportError:
+    MESSAGE_HANDLER_AVAILABLE = False
+    print("⚠️ Message handler not available")
+
+# Initialize message handler (add after tinder_browser initialization)
+if MESSAGE_HANDLER_AVAILABLE and tinder_browser.driver:
+    claude = ClaudeHandler()
+    message_handler = MessageHandler(tinder_browser.driver, claude)
+else:
+    message_handler = None
+
+# Add this route to your dashboard_browser.py
+
+@app.route('/process-messages', methods=['POST'])
+def process_messages():
+    """Process and reply to messages"""
+    if not tinder_browser.driver:
+        return jsonify({
+            "status": "error",
+            "message": "Browser not started"
+        })
+
+    if not tinder_browser.is_logged_in:
+        return jsonify({
+            "status": "error",
+            "message": "Not logged in to Tinder"
+        })
+
+    if not message_handler:
+        return jsonify({
+            "status": "error",
+            "message": "Message handler not initialized"
+        })
+
+    # Process messages
+    replied_count = message_handler.process_new_messages()
+
+    return jsonify({
+        "status": "ok",
+        "replied_to": replied_count,
+        "message": f"Replied to {replied_count} matches"
+    })
+
+# Add auto-reply functionality (add to toggle_bot route)
+# When bot is enabled, start auto-reply thread
+def auto_reply_loop():
+    """Auto-reply to messages"""
+    while bot_state['bot_enabled']:
+        if tinder_browser.driver and tinder_browser.is_logged_in and message_handler:
+            replied = message_handler.process_new_messages()
+            if replied > 0:
+                print(f"📬 Auto-replied to {replied} matches")
+        time.sleep(60)  # Check every minute
+
+# Start auto-reply thread when bot is enabled
+if bot_state['bot_enabled']:
+    reply_thread = threading.Thread(target=auto_reply_loop, daemon=True)
+    reply_thread.start()

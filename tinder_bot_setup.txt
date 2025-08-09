@@ -1,0 +1,216 @@
+# Tinder Bot Setup Instructions
+
+## Project Structure
+```
+tinder_bot/
+├── .env                    # Environment variables
+├── requirements.txt        # Python dependencies
+├── main.py                # Entry point
+├── config.py              # Configuration management
+├── models/
+│   ├── __init__.py
+│   └── session.py         # Session management
+├── core/
+│   ├── __init__.py
+│   ├── api_client.py      # Tinder API client
+│   ├── message_handler.py # Message processing
+│   └── swipe_handler.py   # Swipe automation
+├── personality/
+│   ├── __init__.py
+│   └── generator.py       # AI message generation
+├── utils/
+│   ├── __init__.py
+│   ├── logger.py          # Logging setup
+│   ├── rate_limiter.py    # Rate limiting
+│   ├── stats.py           # Statistics tracking
+│   ├── data_manager.py    # Data persistence
+│   └── human_behavior.py  # Human-like behavior
+├── web/
+│   ├── __init__.py
+│   └── app.py            # Flask web app
+├── templates/
+│   └── index.html        # Dashboard HTML
+├── static/               # Static assets (CSS, JS, images)
+├── data/                 # Data files (auto-created)
+└── logs/                 # Log files (auto-created)
+```
+
+## Requirements.txt
+```
+# Core dependencies
+flask==3.0.0
+flask-socketio==5.3.5
+python-socketio==5.10.0
+requests==2.31.0
+python-dotenv==1.0.0
+anthropic==0.21.3
+
+# Scheduling and async
+apscheduler==3.10.4
+eventlet==0.33.3
+
+# Date/time handling
+python-dateutil==2.8.2
+pytz==2024.1
+backports.zoneinfo==0.2.1;python_version<"3.9"
+
+# Mobile network binding (if available)
+# Note: You'll need to ensure mobile_requests module is available
+# or modify the code to work without it
+
+# Optional but recommended
+psutil==5.9.6
+colorama==0.4.6
+```
+
+## .env File Template
+```
+# Tinder API Authentication
+TINDER_AUTH_TOKEN=your_tinder_auth_token_here
+MY_USER_ID=your_tinder_user_id_here
+
+# Claude API
+CLAUDE_API_KEY=your_claude_api_key_here
+
+# Optional: Account ID (defaults to "main")
+TINDER_ACCOUNT_ID=main
+```
+
+## Installation Steps
+
+1. **Clone/Create the project structure**
+   ```bash
+   mkdir tinder_bot
+   cd tinder_bot
+   ```
+
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   - Copy the `.env` template above
+   - Fill in your actual API keys and tokens
+
+5. **Create necessary directories**
+   ```bash
+   mkdir -p models core personality utils web templates static data logs
+   ```
+
+6. **Create __init__.py files**
+   ```bash
+   touch models/__init__.py core/__init__.py personality/__init__.py utils/__init__.py web/__init__.py
+   ```
+
+7. **Copy all the provided code files to their respective locations**
+
+8. **Handle mobile_requests module**
+   - If you have the mobile_requests module, ensure it's in your Python path
+   - Otherwise, create a stub file:
+   ```python
+   # mobile_requests.py
+   import requests
+   
+   mobile_session = requests.Session()
+   
+   def get_mobile_local_ip():
+       return None
+   
+   class SourceIPAdapter:
+       def __init__(self, source_ip):
+           pass
+   ```
+
+## Getting Your Tinder Auth Token
+
+1. **Using Chrome DevTools:**
+   - Log into Tinder Web (tinder.com)
+   - Open Chrome DevTools (F12)
+   - Go to Network tab
+   - Look for any API request to api.gotinder.com
+   - Find the `X-Auth-Token` header in the request headers
+   - Copy this value for your .env file
+
+2. **Using Mobile App (more complex):**
+   - Use a proxy like Charles or Fiddler
+   - Configure your phone to use the proxy
+   - Open Tinder app
+   - Capture the auth token from requests
+
+## Running the Bot
+
+1. **Start the application**
+   ```bash
+   python main.py
+   ```
+
+2. **Access the dashboard**
+   - Open http://localhost:5000 in your browser
+   - The bot will start in enabled mode by default
+
+3. **Configure settings**
+   - Adjust personality, delays, and limits in the dashboard
+   - Enable/disable auto-approve and auto-swipe as needed
+
+## Important Notes
+
+### Safety and Detection Avoidance
+- The bot includes human-like delays and behavior patterns
+- Typing simulation and random delays between actions
+- Activity patterns that match human usage (less active at night)
+- Fingerprint rotation to avoid detection
+
+### Rate Limits
+- Default 3 seconds minimum between API requests
+- Configurable delays for all actions
+- Built-in backoff for rate limit errors
+
+### Data Storage
+- All data is stored locally in the `data/` directory
+- Logs are rotated automatically in the `logs/` directory
+- Token usage is tracked for billing purposes
+
+### Customization
+- Modify personalities in `config.py`
+- Adjust timing ranges in `HUMAN_DELAYS`
+- Add new personality types as needed
+- Customize swipe evaluation logic in `SwipeHandler`
+
+## Troubleshooting
+
+1. **"Module not found" errors**
+   - Ensure all directories have __init__.py files
+   - Check your Python path includes the project root
+
+2. **API authentication errors**
+   - Verify your Tinder auth token is current
+   - Tokens expire - you may need to get a new one
+
+3. **Claude API errors**
+   - Check your API key is valid
+   - Monitor token usage to avoid limits
+
+4. **No matches appearing**
+   - Check the bot is enabled in the dashboard
+   - Verify your match fetch limit isn't too low
+   - Ensure auto-approve is configured correctly
+
+## Security Considerations
+
+- Never commit your .env file to version control
+- Rotate your Tinder auth token regularly
+- Monitor your Claude API usage to avoid unexpected bills
+- Use the bot responsibly and within Tinder's terms of service
+
+## Future Enhancements
+
+- Add support for multiple Tinder accounts
+- Implement machine learning for better match selection
+- Ad
